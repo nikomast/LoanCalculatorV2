@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import './App.css';
 
-function LoanCalculator() {
+
+function App() {
   const [loans, setLoans] = useState([
     { owner: '', amount: '', interest: '', minimum_payment: '', cost: '', fine: '' }
   ]);
@@ -27,7 +29,8 @@ function LoanCalculator() {
   };
 
   return (
-    <div>
+    <div style={{ maxWidth: '1200px', margin: '50px auto', padding: '10px', background: '#fff', borderRadius: '5px', boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)' }}>
+    <h2 style={{ textAlign: 'center' }}>Loan Calculator</h2>
       {loans.map((_, idx) => (
         <div key={idx} className="loan-entry">
           {/* Your input fields here */}
@@ -91,12 +94,12 @@ function LoanCalculator() {
               }}
               required
               />}
-          <button onClick={addLoan}>Add Loan</button>
           <button onClick={() => removeLoan(idx)}>Remove</button>
         </div>
       ))}
-        <div>
-        <label>Monthly loan amortization budget: </label>
+      <button onClick={addLoan}>Add Loan</button>
+      <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        <label className="Payment-Text">Monthly budget: </label>
         <input
           type="number"
           placeholder=""
@@ -104,9 +107,9 @@ function LoanCalculator() {
           onChange={e => setMonthlyPayment(e.target.value)}
         />
       <button onClick={handleSubmit}>Submit</button>
-      </div>
+</div>
     </div>
   );
 }
 
-export default LoanCalculator;
+export default App;
