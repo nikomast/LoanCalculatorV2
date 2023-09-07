@@ -1,29 +1,43 @@
 from flask import Flask, render_template, request, send_file
+from flask_cors import CORS
+from flask import Flask, jsonify
+# <--- Api kirjastoja. Python kirjastoja -->
 import matplotlib.pyplot as plt 
 import json
 from decimal import Decimal
 import io
-
 import matplotlib.pyplot as plt 
 import mysql.connector
 import pyodbc
 import json
 from decimal import Decimal
 
-final_loan_costs = {}
-class DecimalEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Decimal):
-            return str(obj)  # or float(obj) if you want to convert to float instead of string
-        return super(DecimalEncoder, self).default(obj)
-    
-def connect_databse():
-    connection_string = r'DRIVER={ODBC Driver 17 for SQL Server};SERVER=localhost;DATABASE=Finances;Trusted_Connection=yes;'
+app = Flask(__name__)
+CORS(app)  # This ensures that CORS headers are set for communication between the React and Flask apps
 
-    # Connect to the database
-    cnx = pyodbc.connect(connection_string)
-    cursor = cnx.cursor()
-    return cursor, cnx
+@app.route('/')
+def index():
+    return "Hello, World!"
+
+@app.route('/api/calculate', methods=['POST'])
+def calculate():
+    data = request.json
+    loans = data.get('loans')
+    monthly_payment = data.get('monthlyPayment')
+
+    # Printing the received data
+    print("Monthly Payment Amount:", monthly_payment)
+    for idx, loan in enumerate(loans, start=1):
+        print(f"\nLoan {idx}:")
+        for key, value in loan.items():
+            print(f"{key.capitalize()}: {value}")
+
+    return jsonify({"message": "Data received successfully!"})
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
 
 def done(i):
     for x in loans.copy():
@@ -134,7 +148,7 @@ def get_visuals(ax1, ax2):
 
     plt.show()
 
-def fetch_loans():
+
     
     cursor, cnx = connect_databse()
     cursor.execute("SELECT * FROM loans")
@@ -159,70 +173,7 @@ def fetch_loans():
 
     return loans
 
-def insert_into_loans(Owner, Amount, Interest, MinimumPayment, Fine, Cost):
-    conn_str = (
-        r'Driver={ODBC Driver 17 for SQL Server};'
-        r'Server=localhost;'  # Replace with your server name
-        r'Database=Finances;'    # Replace with your database name
-        r'Trusted_Connection=yes;'
-    )
-    
-    # SQL query to insert data
-    insert_query = '''
-    INSERT INTO Loans (Owner, Amount, Interest, MinimumPayment, Fine, Cost)
-    VALUES (?, ?, ?, ?, ?, ?);
-    '''
-
-    try:
-        # Establishing a connection
-        with pyodbc.connect(conn_str) as conn:
-            cursor = conn.cursor()
-            cursor.execute(insert_query, Owner, Amount, Interest, MinimumPayment, Fine, Cost)
-            conn.commit()
-        print("Data inserted successfully.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-def monthly_update():
-    
-    cursor, cnx = connect_databse()
-    cursor.execute("SELECT * FROM loans")
-    
-    rows = cursor.fetchall()
-    
-    loans = []
-    for row in rows:
-        loan = {
-            "LoanID":row.LoanID,
-            "owner": row.Owner,
-            "amount": row.Amount,
-            "interest": row.Interest,
-            "minimum_payment": row.MinimumPayment,
-            "cost": row.Cost,
-            "fine": row.Fine,
-            "payments": row.Payments
-        }
-        loans.append(loan)
-
-        for x in loans:
-            x["amount"] -= x["minimum_payment"]
-            x["payments"] += 1
-
-        update_query = """
-                UPDATE loans
-                SET Amount = ?, Payments = ?
-                WHERE LoanID = ?
-            """
-        cursor.execute(update_query, (x["amount"], x["payments"], x["LoanID"]))
-
-        cnx.commit()
-
-
-    cursor.close()
-    cnx.close()
-
 #monthly_update()
-loans = fetch_loans()
 print(json.dumps(loans, cls=DecimalEncoder))
 loans = sorted(loans, key=lambda x: x['interest'], reverse=True)
 payment = float(input("Enter the amount you can pay monthly: "))
@@ -238,46 +189,3 @@ while len(loans) != 0:
     if i > 120:
         break
 #get_visuals(history, final_loan_costs)
- 
-app = Flask(__name__)
-
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        # Extract all necessary data from the form
-        loan_data = request.form.getlist('loan_data')  # Assuming you'll send loans as a list of dictionaries
-        payment = float(request.form.get('payment'))
-
-        loans = json.loads(loan_data)
-        
-        # Your loan algorithm 
-        loans = sorted(loans, key=lambda x: x['interest'], reverse=True)
-        history = {loan["owner"]: [] for loan in loans}
-        i = 0
-        while len(loans) != 0:
-            for loan in loans:
-                history[loan["owner"]].append(loan["amount"])
-            minumum_payments(payment, loans, i)
-            add_intrest()
-            i += 1
-            if i > 120:
-                break
-                
-        # Generate visual
-        image = io.BytesIO()
-        get_visuals(history, final_loan_costs, image)
-        
-        image.seek(0)
-        return send_file(image, attachment_filename="loan_plot.png", as_attachment=True)
-
-    return render_template('index.html')  # Assuming you'll have an index.html where user can enter data
-
-def get_visuals(history, final_loan_costs, img_stream):
-    # Your visualization code with a small change
-    # ...
-    plt.savefig(img_stream, format='png')  # save the figure to the image stream
-    plt.close()
-
-if __name__ == '__main__':
-    app.run(debug=True)
-

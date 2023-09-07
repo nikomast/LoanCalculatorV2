@@ -5,13 +5,13 @@ import './App.css';
 
 function App() {
   const [loans, setLoans] = useState([
-    { owner: '', amount: '', interest: '', minimum_payment: '', cost: '', fine: '' }
+    { owner: '', amount: '', interest: '', minimum_payment: '', fine: '' }
   ]);
 
   const [monthlyPayment, setMonthlyPayment] = useState('');
 
   const addLoan = () => {
-    const newLoan = { owner: '', amount: '', interest: '', minimum_payment: '', cost: '', fine: '' };
+    const newLoan = { owner: '', amount: '', interest: '', minimum_payment: '', fine: '' };
     setLoans([...loans, newLoan]);
   };
 
@@ -22,7 +22,7 @@ function App() {
 
   const handleSubmit = () => {
     // When form is submitted, make an API call (for example, using Axios)
-    axios.post('/api/calculate', { loans, monthlyPayment })
+    axios.post('http://127.0.0.1:5000/api/calculate', { loans, monthlyPayment })
       .then(response => {
         // Handle the response here
       });
@@ -49,7 +49,7 @@ function App() {
               placeholder="Amount"
               onChange={e => {
                   const newList = [...loans];
-                  newList[idx].owner = e.target.value;
+                  newList[idx].amount = e.target.value;
                   setLoans(newList);
               }}
               required
@@ -59,7 +59,7 @@ function App() {
               placeholder="Interest"
               onChange={e => {
                   const newList = [...loans];
-                  newList[idx].owner = e.target.value;
+                  newList[idx].interest = e.target.value;
                   setLoans(newList);
               }}
               required
@@ -69,18 +69,8 @@ function App() {
               placeholder="Minimum payment"
               onChange={e => {
                   const newList = [...loans];
-                  newList[idx].owner = e.target.value;
+                  newList[idx].minimum_payment = e.target.value;
                   setLoans(newList);
-              }}
-              required
-              />}
-              {<input
-              type="text"
-              placeholder="Cost"
-              onChange={e => {
-                const newList = [...loans];
-                newList[idx].owner = e.target.value;
-                setLoans(newList);
               }}
               required
               />}
@@ -89,7 +79,7 @@ function App() {
               placeholder="Fine"
               onChange={e => {
                 const newList = [...loans];
-                newList[idx].owner = e.target.value;
+                newList[idx].fine = e.target.value;
                 setLoans(newList);
               }}
               required
