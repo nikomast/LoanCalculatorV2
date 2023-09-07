@@ -6,7 +6,7 @@ CORS(app)  # This will enable CORS for all routes
 
 @app.route('/hello', methods=['GET'])
 def hello():
-    response = make_response("Hello from Flask!")
+    response = make_response("Moro saatana!")
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
