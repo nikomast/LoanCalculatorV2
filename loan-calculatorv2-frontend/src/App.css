@@ -3,20 +3,3 @@
   width: 80%;
   margin: 50px auto;
 }
-
-.loan-entry {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.loan-entry input {
-  flex: 1;
-  margin-right: 10px;
-  padding: 5px;
-}
-
-button {
-  padding: 10px;
-  margin-top: 10px;
-}
