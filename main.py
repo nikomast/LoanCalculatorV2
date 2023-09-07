@@ -24,20 +24,15 @@ def calculate():
     data = request.json
     loans = data.get('loans')
     monthly_payment = data.get('monthlyPayment')
-
+    print("")
     # Printing the received data
     print("Monthly Payment Amount:", monthly_payment)
     for idx, loan in enumerate(loans, start=1):
-        print(f"\nLoan {idx}:")
+        print(f"\nLoan {idx}")
         for key, value in loan.items():
             print(f"{key.capitalize()}: {value}")
-
+    start(loans, monthly_payment)
     return jsonify({"message": "Data received successfully!"})
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
-
 
 def done(i):
     for x in loans.copy():
@@ -148,44 +143,35 @@ def get_visuals(ax1, ax2):
 
     plt.show()
 
+final_loan_costs = {}
+loans = {}
+history = {}
 
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return str(obj)  # or float(obj) if you want to convert to float instead of string
+        return super(DecimalEncoder, self).default(obj)
     
-    cursor, cnx = connect_databse()
-    cursor.execute("SELECT * FROM loans")
-    
-    rows = cursor.fetchall()
-    
-    loans = []
-    for row in rows:
-        loan = {
-            "LoanID":row.LoanID,
-            "owner": row.Owner,
-            "amount": row.Amount,
-            "interest": row.Interest,
-            "minimum_payment": row.MinimumPayment,
-            "cost": row.Cost,
-            "fine": row.Fine
-        }
-        loans.append(loan)
-
-    cursor.close()
-    cnx.close()
-
-    return loans
-
 #monthly_update()
-print(json.dumps(loans, cls=DecimalEncoder))
-loans = sorted(loans, key=lambda x: x['interest'], reverse=True)
-payment = float(input("Enter the amount you can pay monthly: "))
-history = {loan["owner"]: [] for loan in loans}
-loan_cost = {loan["owner"]: [] for loan in loans}
-i = 0
-while len(loans) != 0:
-    for loan in loans:
-        history[loan["owner"]].append(loan["amount"])
-    minumum_payments(payment, loans, i)
-    add_intrest()
-    i += 1
-    if i > 120:
-        break
-#get_visuals(history, final_loan_costs)
+def start(loans, payment):
+    print(json.dumps(loans, cls=DecimalEncoder))
+    loans = sorted(loans, key=lambda x: x['interest'], reverse=True)
+    #payment = float(input("Enter the amount you can pay monthly: "))
+    history = {loan["owner"]: [] for loan in loans}
+    loan_cost = {loan["owner"]: [] for loan in loans}
+    i = 0
+    while len(loans) != 0:
+        for loan in loans:
+            history[loan["owner"]].append(loan["amount"])
+        minumum_payments(payment, loans, i)
+        add_intrest()
+        i += 1
+        if i > 120:
+            break
+    print("done")
+    
+    get_visuals(history, final_loan_costs)
+
+if __name__ == '__main__':
+    app.run(debug=True)
