@@ -5,13 +5,13 @@ from flask import Flask, jsonify
 import matplotlib.pyplot as plt 
 import json
 from decimal import Decimal
-import io
 import matplotlib.pyplot as plt 
-import mysql.connector
-import pyodbc
 import json
 from decimal import Decimal
 import copy
+import tempfile
+import os
+
 
 app = Flask(__name__)
 CORS(app)  # This ensures that CORS headers are set for communication between the React and Flask apps
@@ -22,18 +22,20 @@ def index():
 
 @app.route('/api/calculate', methods=['POST'])
 def calculate():
+    
     data = request.json
     loans = data.get('loans')
     monthly_payment = data.get('monthlyPayment')
     print("")
     # Printing the received data
-    print("Monthly Payment Amount:", monthly_payment)
+    #print("Monthly Payment Amount:", monthly_payment)
     for idx, loan in enumerate(loans, start=1):
         print(f"\nLoan {idx}")
         for key, value in loan.items():
             print(f"{key.capitalize()}: {value}")
-    start(loans, monthly_payment)
-    return jsonify({"message": "Data received successfully!"})
+    response = start(loans, monthly_payment)
+    print(response)
+    return response
 
 
 final_loan_costs = {}
@@ -47,7 +49,7 @@ def done(loans, i):
             print(i)
             final_loan_costs[loan["owner"]] = loan["cost"]
             loans.remove(loan)
-            print(json.dumps(loan, cls=DecimalEncoder))
+            #print(json.dumps(loan, cls=DecimalEncoder))
 
 def minumum_payments(sum, loans, i):
      payment = int(sum)
@@ -143,7 +145,6 @@ def get_visuals(history, ax1, ax2):
     ax1.set_ylabel('Lainan määrä')
     ax1.legend()
 
-
     loan_names = list(final_loan_costs.keys())
     costs = list(final_loan_costs.values())
     ax2.bar(loan_names, costs)
@@ -151,7 +152,12 @@ def get_visuals(history, ax1, ax2):
     ax2.set_ylabel('Kustannukset')
     ax2.set_title('Lainojen kustannukset')
 
-    plt.show()
+    # Save the image to the specified directory
+    save_directory = "C:\\Users\\n1k0m\\Documents\\LoanCalculatorV2\\Images"
+    image_name = "output_image.png"  # or dynamically generate a name if you want
+    image_path = os.path.join(save_directory, image_name)
+    fig.savefig(image_path)
+    return image_path
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -171,7 +177,8 @@ def update_types(loans):
 
 #monthly_update()
 def start(loans, payment):
-    print(json.dumps(loans, cls=DecimalEncoder))
+    final_loan_costs.clear()
+    #print(json.dumps(loans, cls=DecimalEncoder))
     loans = sorted(loans, key=lambda x: x['interest'], reverse=True)
     loans = update_types(loans)
 
@@ -190,7 +197,8 @@ def start(loans, payment):
             break
     print("done")
     print(history)
-    get_visuals(history, history, final_loan_costs)
+    return get_visuals(history, history, final_loan_costs)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -20,11 +20,14 @@ function App() {
     setLoans(filteredLoans);
   };
 
+  const [imageUrl, setImageUrl] = useState("");
+
   const handleSubmit = () => {
     // When form is submitted, make an API call (for example, using Axios)
     axios.post('http://127.0.0.1:5000/api/calculate', { loans, monthlyPayment })
       .then(response => {
-        // Handle the response here
+        const imgUrl =response.data;
+        window.open(imgUrl, "_blank");
       });
   };
 
@@ -33,7 +36,6 @@ function App() {
     <h2 style={{ textAlign: 'center' }}>Loan Calculator</h2>
       {loans.map((_, idx) => (
         <div key={idx} className="loan-entry">
-          {/* Your input fields here */}
           <input
             type="text"
             placeholder="Owner"
@@ -97,6 +99,9 @@ function App() {
           onChange={e => setMonthlyPayment(e.target.value)}
         />
       <button onClick={handleSubmit}>Submit</button>
+</div>
+<div className='frame'>
+<h2 style={{ textAlign: 'center' }}>Tässä pitäisi olla kuva</h2>
 </div>
     </div>
   );
