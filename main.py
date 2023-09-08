@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, send_file
 from flask_cors import CORS
 from flask import Flask, jsonify
+from flask import send_from_directory
 # <--- Api kirjastoja. Python kirjastoja -->
 import matplotlib.pyplot as plt 
 import json
@@ -34,9 +35,14 @@ def calculate():
         for key, value in loan.items():
             print(f"{key.capitalize()}: {value}")
     response = start(loans, monthly_payment)
-    print(response)
-    return response
+    image_filename = "output_image.png"
+    image_url = f"http://127.0.0.1:5000/images/{image_filename}"
+    return jsonify({"imageUrl": image_url})
 
+@app.route('/images/<filename>', methods=['GET'])
+def serve_image(filename):
+    image_folder = "C:\\Users\\n1k0m\\Documents\\LoanCalculatorV2\\Images"
+    return send_from_directory(image_folder, filename)
 
 final_loan_costs = {}
 loans = {}

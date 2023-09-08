@@ -26,8 +26,7 @@ function App() {
     // When form is submitted, make an API call (for example, using Axios)
     axios.post('http://127.0.0.1:5000/api/calculate', { loans, monthlyPayment })
       .then(response => {
-        const imgUrl =response.data;
-        window.open(imgUrl, "_blank");
+        setImageUrl(response.data.imageUrl);
       });
   };
 
