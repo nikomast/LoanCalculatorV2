@@ -11,6 +11,7 @@ import mysql.connector
 import pyodbc
 import json
 from decimal import Decimal
+import copy
 
 app = Flask(__name__)
 CORS(app)  # This ensures that CORS headers are set for communication between the React and Flask apps
@@ -34,13 +35,19 @@ def calculate():
     start(loans, monthly_payment)
     return jsonify({"message": "Data received successfully!"})
 
-def done(i):
-    for x in loans.copy():
-        if x['amount'] == 0:
+
+final_loan_costs = {}
+loans = {}
+history = {}
+
+def done(loans, i):
+    for loan in loans:
+        print("tuleeko se tänne?")
+        if loan['amount'] == 0:
             print(i)
-            final_loan_costs[x["owner"]] = x["cost"]
-            loans.remove(x)
-            print(json.dumps(x, cls=DecimalEncoder))
+            final_loan_costs[loan["owner"]] = loan["cost"]
+            loans.remove(loan)
+            print(json.dumps(loan, cls=DecimalEncoder))
 
 def minumum_payments(sum, loans, i):
      payment = int(sum)
@@ -59,7 +66,7 @@ def minumum_payments(sum, loans, i):
                  payment -= x['amount']
                  #print("Maksetaan lainasta", x['owner'], x['amount'], )
                  x['amount'] = 0
-                 done(i)
+                 done(loans, i)
             else:
                 x['amount'] -= x['minimum_payment']
                 #print("Maksetaan lainasta", x['owner'], x['minimum_payment'])
@@ -73,7 +80,7 @@ def minumum_payments(sum, loans, i):
                  #payment -= x['amount']
                  #print("Maksetaan laina", x['owner'],"kokonaan pois, jonka jälkeen rahaa on jäljellä:", payment)
                  x['amount'] = 0
-                 done(i)
+                 done(loans, i)
 
          loans = sorted(loans, key=lambda x: x['minimum_payment'], reverse=False)
          for x in loans:
@@ -93,13 +100,13 @@ def minumum_payments(sum, loans, i):
      if penalty > reduction:
          print("Lainoja ei saa tällä budjetilla koskaan maksettua")
 
-     done(i)
+     done(loans, i)
      loans = sorted(loans, key=lambda x: x['interest'], reverse=True)
      if payment > 0:
-        additional_payments(payment, i)
+        additional_payments(loans, payment, i)
 
-def additional_payments(payment, i):
-    #print("--------------------------")
+def additional_payments(loans, payment, i):
+    print("--------------------------")
     #print("Minimi maksujen jälkeen rahaa jäi:",payment)
     for x in loans:
          if x['amount'] > payment:
@@ -113,18 +120,18 @@ def additional_payments(payment, i):
 
          if payment == 0:
             break
-    done(i)
+    done(loans, i)
     """if payment != 0:
         print("Rahaa jäi: ", payment)"""
 
-def add_intrest():
+def add_intrest(loans):
     for x in loans:
         if x['interest'] != 0:
             interest = x['amount'] * ((x['interest']/12)/100)
             x['amount'] += interest
             x['cost'] += interest
 
-def get_visuals(ax1, ax2):
+def get_visuals(history, ax1, ax2):
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))  # 1 row, 2 columns
 
@@ -145,10 +152,6 @@ def get_visuals(ax1, ax2):
     ax2.set_title('Lainojen kustannukset')
 
     plt.show()
-
-final_loan_costs = {}
-loans = {}
-history = {}
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -171,21 +174,23 @@ def start(loans, payment):
     print(json.dumps(loans, cls=DecimalEncoder))
     loans = sorted(loans, key=lambda x: x['interest'], reverse=True)
     loans = update_types(loans)
+
     #payment = float(input("Enter the amount you can pay monthly: "))
-    history = {loan["owner"]: [] for loan in loans}
-    loan_cost = {loan["owner"]: [] for loan in loans}
+    temp = {loan["owner"]: [] for loan in loans}
+    #loan_cost = {loan["owner"]: [] for loan in loans}
     i = 0
     while len(loans) != 0:
         for loan in loans:
-            history[loan["owner"]].append(loan["amount"])
+            temp[loan["owner"]].append(int(loan["amount"]))
+            history = copy.deepcopy(temp)
         minumum_payments(payment, loans, i)
-        add_intrest()
+        add_intrest(loans)
         i += 1
         if i > 120:
             break
     print("done")
-    
-    get_visuals(history, final_loan_costs)
+    print(history)
+    get_visuals(history, history, final_loan_costs)
 
 if __name__ == '__main__':
     app.run(debug=True)
