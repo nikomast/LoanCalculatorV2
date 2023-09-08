@@ -5,13 +5,13 @@ import './App.css';
 
 function App() {
   const [loans, setLoans] = useState([
-    { owner: '', amount: '', interest: '', minimum_payment: '', fine: '' }
+    { owner: '', amount: '', interest: '', minimum_payment: '', cost: '0', fine: '' }
   ]);
 
   const [monthlyPayment, setMonthlyPayment] = useState('');
 
   const addLoan = () => {
-    const newLoan = { owner: '', amount: '', interest: '', minimum_payment: '', fine: '' };
+    const newLoan = { owner: '', amount: '', interest: '', minimum_payment: '',cost: '0', fine: '' };
     setLoans([...loans, newLoan]);
   };
 

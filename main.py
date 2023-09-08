@@ -42,12 +42,15 @@ def done(i):
             loans.remove(x)
             print(json.dumps(x, cls=DecimalEncoder))
 
-def minumum_payments(payment, loans, i):
+def minumum_payments(sum, loans, i):
+     payment = int(sum)
      penalty = 0
      reduction = payment
      cost = 0
-     for x in loans:   
-        cost += x['minimum_payment']
+     for x in loans:
+        print(type(payment))
+        print(x)   
+        cost += int(x['minimum_payment'])
      #print("Lainojen maksuun tarvittava minimisumma on:", cost)
      if payment >= cost:
          #print("lainojen maksun pitäisi onnistua!")
@@ -152,11 +155,22 @@ class DecimalEncoder(json.JSONEncoder):
         if isinstance(obj, Decimal):
             return str(obj)  # or float(obj) if you want to convert to float instead of string
         return super(DecimalEncoder, self).default(obj)
-    
+
+def update_types(loans):
+    for loan in loans:
+        # Assuming owner remains a string, so we skip it
+        loan['amount'] = int(loan['amount'])
+        loan['interest'] = int(loan['interest'])
+        loan['minimum_payment'] = int(loan['minimum_payment'])
+        loan['cost'] = int(loan['cost'])
+        loan['fine'] = int(loan['fine'])
+    return loans
+
 #monthly_update()
 def start(loans, payment):
     print(json.dumps(loans, cls=DecimalEncoder))
     loans = sorted(loans, key=lambda x: x['interest'], reverse=True)
+    loans = update_types(loans)
     #payment = float(input("Enter the amount you can pay monthly: "))
     history = {loan["owner"]: [] for loan in loans}
     loan_cost = {loan["owner"]: [] for loan in loans}
