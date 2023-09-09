@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, request
 from flask_cors import CORS
 from flask import Flask, jsonify
 from flask import send_from_directory
@@ -10,12 +10,13 @@ import matplotlib.pyplot as plt
 import json
 from decimal import Decimal
 import copy
-import tempfile
 import os
 
 
 app = Flask(__name__)
 CORS(app)  # This ensures that CORS headers are set for communication between the React and Flask apps
+image_folder = "C:\\Users\\n1k0m\\Documents\\LoanCalculatorV2\\Images"
+BASE_IMAGE_URL = "http://127.0.0.1:5000/images"
 
 @app.route('/')
 def index():
@@ -27,13 +28,6 @@ def calculate():
     data = request.json
     loans = data.get('loans')
     monthly_payment = data.get('monthlyPayment')
-    print("")
-    # Printing the received data
-    #print("Monthly Payment Amount:", monthly_payment)
-    for idx, loan in enumerate(loans, start=1):
-        print(f"\nLoan {idx}")
-        for key, value in loan.items():
-            print(f"{key.capitalize()}: {value}")
     response = start(loans, monthly_payment)
     image_filename = "output_image.png"
     image_url = f"http://127.0.0.1:5000/images/{image_filename}"
@@ -41,8 +35,10 @@ def calculate():
 
 @app.route('/images/<filename>', methods=['GET'])
 def serve_image(filename):
-    image_folder = "C:\\Users\\n1k0m\\Documents\\LoanCalculatorV2\\Images"
-    return send_from_directory(image_folder, filename)
+    try:
+        return send_from_directory(image_folder, filename)
+    except Exception as e:
+        return jsonify({"error": "Image not found!"}), 404
 
 final_loan_costs = {}
 loans = {}
@@ -50,75 +46,55 @@ history = {}
 
 def done(loans, i):
     for loan in loans:
-        print("tuleeko se tänne?")
         if loan['amount'] == 0:
-            print(i)
             final_loan_costs[loan["owner"]] = loan["cost"]
             loans.remove(loan)
             #print(json.dumps(loan, cls=DecimalEncoder))
 
 def minumum_payments(sum, loans, i):
      payment = int(sum)
-     penalty = 0
-     reduction = payment
      cost = 0
-     for x in loans:
-        print(type(payment))
-        print(x)   
+     for x in loans:   
         cost += int(x['minimum_payment'])
-     #print("Lainojen maksuun tarvittava minimisumma on:", cost)
+     #Tässä voisi ilmoittaa jos lainojen maksu ei onnistu
      if payment >= cost:
-         #print("lainojen maksun pitäisi onnistua!")
+         #maksetaan kaikista lainoista minimisumma
          for x in loans:
             if x['amount'] < x['minimum_payment']:
                  payment -= x['amount']
-                 #print("Maksetaan lainasta", x['owner'], x['amount'], )
                  x['amount'] = 0
                  done(loans, i)
             else:
+                #jos lainaa on maksamatta vähemmän kuin minimimaksu maksetaan se kokonaan pois
                 x['amount'] -= x['minimum_payment']
-                #print("Maksetaan lainasta", x['owner'], x['minimum_payment'])
                 payment -= x['minimum_payment']
      else:
-         #print("rahat eivät riitä lainojen maksuun!")
+         #Jos rahat ei riitä kaikkiin minimimaksuihin yritetään maksaa joitakin lainoja kokonaan pois jotta tämä tilanne ei toistuisi
          for x in loans:
-            #tässä katsotaan pystyykö maskamaan jotain pois
-            #print((payment >=  x['amount'] and x['amount'] != 0))
             if payment >=  x['amount'] and x['amount'] != 0:
-                 #payment -= x['amount']
-                 #print("Maksetaan laina", x['owner'],"kokonaan pois, jonka jälkeen rahaa on jäljellä:", payment)
+                 payment -= x['amount']
                  x['amount'] = 0
                  done(loans, i)
-
+        #jos edellisen jälkeen maksetaan kaikki jotka pystytään niihin joita ei pystytä maksamaan lisätään sakko
          loans = sorted(loans, key=lambda x: x['minimum_payment'], reverse=False)
          for x in loans:
-            #tässä katotaan pystyykö maksamaan pakollisia maksuja
                 if payment >= x['minimum_payment'] and x['amount'] != 0:
                         payment -= x['minimum_payment']
                         x['amount'] -= x['minimum_payment']
-                        #print("Pystytään maksamaan lainasta", x['owner'], "vain minimiosa: ",x['minimum_payment'],", jonka jälkeen rahaa on jäljellä:", payment)
-
                 else:
-                    sakko = 5
-                    x['amount'] += x['minimum_payment'] + sakko
-                    x['fine']  += 1
-                    x['cost'] += sakko
-                    penalty += x['minimum_payment'] + sakko
-
-     if penalty > reduction:
-         print("Lainoja ei saa tällä budjetilla koskaan maksettua")
+                    x['amount'] += x['fine']
+                    x['cost'] += x['fine']
 
      done(loans, i)
      loans = sorted(loans, key=lambda x: x['interest'], reverse=True)
+     #jos minimi maksujen jälkeen jäi rahaa käytetään ns. yritetään päästä lainoista eroon mahdollisimman nopeasti, lumivyörymetodi voisi olla toinen vaihtoehto
      if payment > 0:
         additional_payments(loans, payment, i)
 
 def additional_payments(loans, payment, i):
-    print("--------------------------")
-    #print("Minimi maksujen jälkeen rahaa jäi:",payment)
+    #Jos tänne päästään niin siitäkin voisi kertoa käyttäjälle
     for x in loans:
          if x['amount'] > payment:
-            #print("Maksetaan lainasta", x['owner'],"summa", payment)
             x['amount'] -= payment
             payment = 0
          else:
@@ -129,8 +105,6 @@ def additional_payments(loans, payment, i):
          if payment == 0:
             break
     done(loans, i)
-    """if payment != 0:
-        print("Rahaa jäi: ", payment)"""
 
 def add_intrest(loans):
     for x in loans:
@@ -181,16 +155,13 @@ def update_types(loans):
         loan['fine'] = int(loan['fine'])
     return loans
 
-#monthly_update()
 def start(loans, payment):
     final_loan_costs.clear()
-    #print(json.dumps(loans, cls=DecimalEncoder))
     loans = sorted(loans, key=lambda x: x['interest'], reverse=True)
     loans = update_types(loans)
 
-    #payment = float(input("Enter the amount you can pay monthly: "))
     temp = {loan["owner"]: [] for loan in loans}
-    #loan_cost = {loan["owner"]: [] for loan in loans}
+
     i = 0
     while len(loans) != 0:
         for loan in loans:
@@ -201,8 +172,9 @@ def start(loans, payment):
         i += 1
         if i > 120:
             break
-    print("done")
-    print(history)
+    print("-----------------------------------------")
+    print("Lainojen maksuun kuluu:", i-1, "kuukautta")
+    print("-----------------------------------------")
     return get_visuals(history, history, final_loan_costs)
 
 

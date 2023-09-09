@@ -23,16 +23,29 @@ function App() {
   const [imageUrl, setImageUrl] = useState("");
 
   const handleSubmit = () => {
-    // When form is submitted, make an API call (for example, using Axios)
+    for (let loan of loans) {
+      if (!loan.owner || !loan.amount || !loan.interest || !loan.minimum_payment || !loan.fine) {
+          alert("Please fill in all the fields before submitting.");
+          return;
+      }
+  }
+
+  // Check if the monthlyPayment field is empty
+  if (!monthlyPayment) {
+      alert("Please fill in the monthly payment before submitting.");
+      return;
+  }
     axios.post('http://127.0.0.1:5000/api/calculate', { loans, monthlyPayment })
       .then(response => {
-        setImageUrl(response.data.imageUrl);
+        const imageUrlWithTimestamp = `${response.data.imageUrl}?timestamp=${new Date().getTime()}`;
+        setImageUrl(imageUrlWithTimestamp);
+        //window.open(response.data.imageUrl, "_blank");
       });
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '50px auto', padding: '10px', background: '#fff', borderRadius: '5px', boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)' }}>
-    <h2 style={{ textAlign: 'center' }}>Loan Calculator</h2>
+    <div className="container">
+    <h2 className="center-text">Loan_Calculator</h2>
       {loans.map((_, idx) => (
         <div key={idx} className="loan-entry">
           <input
@@ -89,18 +102,19 @@ function App() {
         </div>
       ))}
       <button onClick={addLoan}>Add Loan</button>
-      <div style={{ textAlign: 'center', marginTop: '20px' }}>
-        <label className="Payment-Text">Monthly budget: </label>
+      <div className="center-container">
+        <label className="Payment-Text">Monthly payment sum: </label>
         <input
           type="number"
+          className="budget-input"
           placeholder=""
           value={monthlyPayment}
           onChange={e => setMonthlyPayment(e.target.value)}
-        />
+          />
       <button onClick={handleSubmit}>Submit</button>
 </div>
 <div className='frame'>
-<h2 style={{ textAlign: 'center' }}>Tässä pitäisi olla kuva</h2>
+{imageUrl ? <img src={imageUrl} alt="Calculated graph" /> : ""}
 </div>
     </div>
   );
